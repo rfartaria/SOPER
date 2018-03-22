@@ -92,7 +92,28 @@ int main(int argc, char *argv[])
 	// em caso de ausência de parâmetros escrever mensagem de como utilizar o programa e terminar
 	// considerar que os parâmetros apenas são introduzidos na ordem indicada pela mensagem
 	// considerar que são sempre introduzidos valores válidos para os parâmetros
-    intervalo = so_main_args(argc, argv, &ficEntrada, &ficSaida, &ficLog);
+    //intervalo = so_main_args(argc, argv, &ficEntrada, &ficSaida, &ficLog);
+    if (argc < 2)
+    {
+        puts("Usage: socurrency file_configuracao [file_resultados] -l [file_log] -t [intervalo(us)]\nExample: ./bin/socurrency testes/in/cenario1 testes/out/cenario1 -l testes/log/cenario1.log -t 1000");
+        exit(1);
+    }
+    
+    ficEntrada = argv[1];
+    
+    if (argc >= 3) {
+        ficSaida = argv[2];
+    }
+    
+    if (argc >= 5 && strcmp(argv[3], "-l") == 0) 
+    {
+        ficLog = argv[4];
+    }
+    
+    if (argc > 6 && strcmp(argv[5], "-t") == 0) 
+    {
+        sscanf(argv[6], "%ld", &intervalo);
+    }
     //==============================================
 
     printf(
