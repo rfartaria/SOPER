@@ -45,12 +45,12 @@ test_dirs:
 scenario%:
 	./bin/socurrency $(TESTS_DIR)/in/$@ $(TESTS_DIR)/out/$@ -l $(TESTS_DIR)/log/$@.log -t 1000
 
-scenario1: test_dirs
-scenario2: test_dirs
-scenario3: test_dirs
-scenario4: test_dirs
+scenario1: test_dirs $(BIN_DIR)/socurrency
+scenario2: test_dirs $(BIN_DIR)/socurrency
+scenario3: test_dirs $(BIN_DIR)/socurrency
+scenario4: test_dirs $(BIN_DIR)/socurrency
 
-test: scenario1
+base_test: scenario1
 	@echo
 	@echo Test lines out of order
 	@bash script.sh tests/out/scenario1 <(awk 'BEGIN{i=0}{l[i++]=$$0}END{for (j=0;j<i;j++) print l[i-j-1]}' tests/out/scenario1)
@@ -58,3 +58,8 @@ test: scenario1
 	@echo Test changes in file
 	@bash script.sh tests/out/scenario1 <(sed 's/001/0010/' tests/out/scenario1)
 
+test_scenario%:
+	./socurrency.ref $(TESTS_DIR)/in/$(subst test_,,$@) $(TESTS_DIR)/out/$(subst test_,,$@).ref -l $(TESTS_DIR)/log/$(subst test_,,$@).log.ref -t 1000
+	bash script.sh $(TESTS_DIR)/out/$(subst test_,,$@) $(TESTS_DIR)/out/$(subst test_,,$@).ref
+
+test_scenario1: test_dirs $(BIN_DIR)/socurrency scenario1
