@@ -58,8 +58,15 @@ base_test: scenario1
 	@echo Test changes in file
 	@bash script.sh tests/out/scenario1 <(sed 's/001/0010/' tests/out/scenario1)
 
+# these tests require that the provided executable is moved into the project main directory and renamed socurrency.ref
 test_scenario%:
+	rm -vf $(TESTS_DIR)/out/$(subst test_,,$@).ref $(TESTS_DIR)/out/$(subst test_,,$@)
 	./socurrency.ref $(TESTS_DIR)/in/$(subst test_,,$@) $(TESTS_DIR)/out/$(subst test_,,$@).ref -l $(TESTS_DIR)/log/$(subst test_,,$@).log.ref -t 1000
+	$(BIN_DIR)/socurrency $(TESTS_DIR)/in/$(subst test_,,$@) $(TESTS_DIR)/out/$(subst test_,,$@) -l $(TESTS_DIR)/log/$(subst test_,,$@).log -t 1000
 	bash script.sh $(TESTS_DIR)/out/$(subst test_,,$@) $(TESTS_DIR)/out/$(subst test_,,$@).ref
 
-test_scenario1: test_dirs $(BIN_DIR)/socurrency scenario1
+test_scenario1: test_dirs $(BIN_DIR)/socurrency
+test_scenario2: test_dirs $(BIN_DIR)/socurrency
+test_scenario3: test_dirs $(BIN_DIR)/socurrency
+test_scenario4: test_dirs $(BIN_DIR)/socurrency
+

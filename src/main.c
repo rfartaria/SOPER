@@ -39,7 +39,16 @@ void main_investor(int quant)
 	// - chama a função investor_executar passando como parâmetro o valor da variável de controlo do ciclo n=0,1,...
 	// - chama a função exit passando como parâmetro o valor devolvido pela função investor_executar
 	// o processo pai guarda o pid do filho no vetor Ind.pid_investors[n], com n=0,1,... e termina normalmente a função
-    so_main_investor(quant);
+    //so_main_investor(quant);
+    int i, pid;
+    for (i=0;i<quant;i++)
+    {
+        if ((pid = fork()) == 0)
+        {
+            exit(investor_executar(i));
+        }
+        Ind.pid_investors[i] = pid;
+    }
     //==============================================
 }
 
@@ -54,7 +63,16 @@ void main_broker(int quant)
 	// - chama a função investor_executar passando como parâmetro o valor da variável de controlo do ciclo n=0,1,...
 	// - chama a função exit passando como parâmetro o valor devolvido pela função broker_executar
 	// o processo pai guarda o pid do filho no vetor Ind.pid_brokers[n], com n=0,1,... e termina normalmente a função
-    so_main_broker(quant);
+    //so_main_broker(quant);
+    int i, pid;
+    for (i=0;i<quant;i++)
+    {
+        if ((pid = fork()) == 0)
+        {
+            exit(broker_executar(i));
+        }
+        Ind.pid_brokers[i] = pid;
+    }
     //==============================================
 }
 
@@ -69,7 +87,16 @@ void main_exchange(int quant)
 	// - chama a função investor_executar passando como parâmetro o valor da variável de controlo do ciclo n=0,1,...
 	// - chama a função exit passando como parâmetro o valor devolvido pela função exchange_executar
 	// o processo pai guarda o pid do filho no vetor Ind.pid_exchanges[n], com n=0,1,... e termina normalmente a função
-    so_main_exchange(quant);
+    //so_main_exchange(quant);
+    int i, pid;
+    for (i=0;i<quant;i++)
+    {
+        if ((pid = fork()) == 0)
+        {
+            exit(exchange_executar(i));
+        }
+        Ind.pid_exchanges[i] = pid;
+    }
     //==============================================
 }
 
@@ -95,7 +122,8 @@ int main(int argc, char *argv[])
     //intervalo = so_main_args(argc, argv, &ficEntrada, &ficSaida, &ficLog);
     if (argc < 2)
     {
-        puts("Usage: socurrency file_configuracao [file_resultados] -l [file_log] -t [intervalo(us)]\nExample: ./bin/socurrency testes/in/cenario1 testes/out/cenario1 -l testes/log/cenario1.log -t 1000");
+        printf("Usage: socurrency file_configuracao [file_resultados] -l [file_log] -t [intervalo(us)]\n");
+        printf("Example: ./bin/socurrency testes/in/cenario1 testes/out/cenario1 -l testes/log/cenario1.log -t 1000\n");
         exit(1);
     }
     
@@ -157,7 +185,18 @@ int main(int argc, char *argv[])
 	// se o investor terminou normalmente 
 	// então incrementar o indicador de currencies obtidos
     // Ind.currencies_getby_investors[n], n=0,1,...
-    so_main_wait_investors();
+    //so_main_wait_investors();
+    int i_inv, status_inv;
+    for (i_inv=0; i_inv<Config.INVESTORS; i_inv++)
+    {
+        waitpid(Ind.pid_investors[i_inv], &status_inv, 0);
+        if (WIFEXITED(status_inv))
+        {
+            if (WEXITSTATUS(status_inv)<Config.CURRENCIES)
+                Ind.currencies_getby_investors[WEXITSTATUS(status_inv)]++;
+            //printf("cur = %d  ind = %d\n", Config.CURRENCIES, WEXITSTATUS(status_inv));
+        }
+    }
     //==============================================
 
     // Desarmar alarme
@@ -174,7 +213,16 @@ int main(int argc, char *argv[])
 	// então atualizar o indicador de investors atendidos
     // Ind.investors_servedby_brokers[n], n=0,1,...
     // guardando nele o estado devolvido pela terminação do processo
-    so_main_wait_brokers();
+    //so_main_wait_brokers();
+    int i_bro, status_bro;
+    for (i_bro=0; i_bro<Config.BROKERS; i_bro++)
+    {
+        waitpid(Ind.pid_brokers[i_bro], &status_bro, 0);
+        if (WIFEXITED(status_bro))
+        {
+            Ind.investors_servedby_brokers[i_bro] = WEXITSTATUS(status_bro);
+        }
+    }
     //==============================================
 
     //==============================================
@@ -185,7 +233,16 @@ int main(int argc, char *argv[])
 	// então atualizar o indicador de investors atendidos
     // Ind.investors_servedby_exchanges[n], n=0,1,...
     // guardando nele o estado devolvido pela terminação do processo
-    so_main_wait_exchanges();
+    //so_main_wait_exchanges();
+    int i_exc, status_exc;
+    for (i_exc=0; i_exc<Config.EXCHANGES; i_exc++)
+    {
+        waitpid(Ind.pid_exchanges[i_exc], &status_exc, 0);
+        if (WIFEXITED(status_exc))
+        {
+            Ind.investors_servedby_exchanges[i_exc] = WEXITSTATUS(status_exc);
+        }
+    }
     //==============================================
 
     printf(
