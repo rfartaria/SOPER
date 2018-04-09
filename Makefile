@@ -35,6 +35,7 @@ clean:
 	rm -vf $(OBJECTS)
 	rm -vf $(TESTS_DIR)/out/*
 	rm -vf $(TESTS_DIR)/log/*
+	rm -vf /dev/shm/*_$$(id -u)
 
 all_scenarios: scenario1 scenario2 scenario3 scenario4
 
