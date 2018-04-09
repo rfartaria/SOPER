@@ -27,6 +27,8 @@
 // DECLARAR ACESSO A DADOS EXTERNOS
 //
 extern struct configuration Config;
+extern struct scheduler Schedule;
+extern struct statistics Ind;
 //==============================================
 
 struct receipt_r BReceipt;  // buffer exchange-investor
@@ -44,8 +46,54 @@ void * memory_create(char * name, int size) {
 	// sprintf(name_uid,"/%s_%d", name, getuid())
 	// usar name_uid em shm_open
 	// usar tambem: ftruncate e mmap
-	return so_memory_create(name, size);
+	//return so_memory_create(name, size);
 	//==============================================
+    int fd;
+	char* name_uid;
+	char* error_message;
+	void* ptr;
+    #define LSTRSIZE 200
+
+	name_uid = (char*)calloc(LSTRSIZE,1);
+	error_message = (char*)calloc(LSTRSIZE,1);
+	
+	sprintf(name_uid,"/%s_%d", name, getuid());
+	fd = shm_open(name_uid, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+	if (fd == -1)
+	{
+
+		memset(error_message, 0, LSTRSIZE);
+		strcpy(error_message, "shm_open: ");
+		strcat(error_message, name_uid);
+		perror(error_message);
+		exit(10);
+	}
+	
+	if (ftruncate(fd, size) == -1) 
+	{
+		shm_unlink(name_uid); // se houve erro, elimina ficheiro
+		memset(error_message, 0, LSTRSIZE);
+		strcpy(error_message, "ftruncate : ");
+		strcat(error_message, name_uid);
+		perror(error_message);
+		exit(11);
+	}
+	
+	ptr = mmap(0, 1, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	if (ptr == MAP_FAILED)
+	{
+		shm_unlink(name_uid); // se houve erro, elimina ficheiro
+		memset(error_message, 0, LSTRSIZE);
+		strcpy(error_message, "mmap : ");
+		strcat(error_message, name_uid);
+		perror(error_message);
+		exit(12);
+	}
+	
+	free(name_uid);
+	free(error_message);
+	
+	return ptr;
 }
 void memory_create_stock() {
 	//==============================================
@@ -55,8 +103,9 @@ void memory_create_stock() {
 	// para criar ponteiro que se guarda em Config.stock
 	// que deve ter capacidade para um vetor unidimensional
 	// com a dimensao [CURRENCIES] para inteiro
-	so_memory_create_stock();
+	// so_memory_create_stock();
 	//==============================================
+    Config.stock = (int*)memory_create(STR_SHM_STOCK, sizeof(int)*Config.CURRENCIES);
 }
 void memory_create_buffers() {
 	//==============================================
@@ -83,8 +132,16 @@ void memory_create_buffers() {
 	// para criar ponteiro que se guarda em BCurrency.buffer
 	// que deve ter capacidade para um vetor unidimensional
 	// com a dimensao [BUFFER_REQUEST] para struct currency
-	so_memory_create_buffers();
+	// so_memory_create_buffers();
 	//==============================================
+    BReceipt.ptr = (int*)memory_create(STR_SHM_RECEIPT_PTR, sizeof(int)*Config.BUFFER_RECEIPT);
+    BReceipt.buffer = (struct currency*)memory_create(STR_SHM_RECEIPT_BUFFER, sizeof(struct currency)*Config.BUFFER_RECEIPT);
+    
+    BOrder.ptr = (int*)memory_create(STR_SHM_ORDER_PTR, sizeof(int)*Config.BUFFER_ORDER);
+    BOrder.buffer = (struct currency*)memory_create(STR_SHM_ORDER_BUFFER, sizeof(struct currency)*Config.BUFFER_ORDER);
+	
+	BCurrency.ptr = (struct pointers*)memory_create(STR_SHM_CURRENCY_PTR, sizeof(struct pointers)*Config.BUFFER_REQUEST);
+	BCurrency.buffer = (struct currency*)memory_create(STR_SHM_CURRENCY_BUFFER, sizeof(struct currency)*Config.BUFFER_REQUEST);
 }
 void memory_create_scheduler() {
 	//==============================================
@@ -94,8 +151,9 @@ void memory_create_scheduler() {
 	// para criar ponteiro que se guarda em Schedule.ptr
 	// que deve ter capacidade para um vetor bidimensional
 	// com a dimensao [CURRENCIES,EXCHANGES] para inteiro
-	so_memory_create_scheduler();
+	// so_memory_create_scheduler();
 	//==============================================
+    Schedule.ptr = (int*)memory_create(STR_SHM_SCHEDULER, sizeof(int)*Config.CURRENCIES*Config.BROKERS);
 }
 
 void memory_destroy(char * name, void * ptr, int size) {
@@ -106,8 +164,37 @@ void memory_destroy(char * name, void * ptr, int size) {
 	// sprintf(name_uid,"/%s_%d", name, getuid())
 	// usar name_uid em shm_unlink
 	// usar tambem: munmap
-	so_memory_destroy(name, ptr, size);
+	// so_memory_destroy(name, ptr, size);
 	//==============================================
+    char* name_uid;
+	char* error_message;
+	#define LSTRSIZE 200
+
+	name_uid = (char*)calloc(LSTRSIZE,1);
+	error_message = (char*)calloc(LSTRSIZE,1);
+	
+	sprintf(name_uid,"/%s_%d", name, getuid());
+	
+	if (munmap(ptr, size) == -1)
+	{
+		memset(error_message, 0, LSTRSIZE);
+		strcpy(error_message, "munmap : ");
+		strcat(error_message, name_uid);
+		perror(error_message);
+		exit(13);
+	}
+
+	if (shm_unlink(name_uid) == -1) 
+	{
+		memset(error_message, 0, LSTRSIZE);
+		strcpy(error_message, "shm_unlink : ");
+		strcat(error_message, name_uid);
+		perror(error_message);
+		exit(14);
+	}
+	
+	free(name_uid);
+	free(error_message);
 }
 
 //******************************************
@@ -118,8 +205,16 @@ void memory_destroy_all() {
 	// DESTRUIR MAPEAMENTO E NOME DE PÁGINAS DE MEMÓRIA
 	//
 	// utilizar a função genérica memory_destroy(char *,void *,int)
-	so_memory_destroy_all();
+	// so_memory_destroy_all();
 	//==============================================
+    memory_destroy(STR_SHM_STOCK, Config.stock, sizeof(int)*Config.CURRENCIES);
+	memory_destroy(STR_SHM_RECEIPT_PTR, BReceipt.ptr, sizeof(int)*Config.BUFFER_RECEIPT);
+	memory_destroy(STR_SHM_RECEIPT_BUFFER, BReceipt.buffer, sizeof(struct currency)*Config.BUFFER_RECEIPT);
+	memory_destroy(STR_SHM_ORDER_PTR, BOrder.ptr, sizeof(int)*Config.BUFFER_ORDER);
+	memory_destroy(STR_SHM_ORDER_BUFFER, BOrder.buffer, sizeof(struct currency)*Config.BUFFER_ORDER);
+	memory_destroy(STR_SHM_CURRENCY_PTR, BCurrency.ptr, sizeof(struct pointers)*Config.BUFFER_REQUEST);
+	memory_destroy(STR_SHM_CURRENCY_BUFFER, BCurrency.buffer, sizeof(struct currency)*Config.BUFFER_REQUEST);
+	memory_destroy(STR_SHM_SCHEDULER, Schedule.ptr, sizeof(int)*Config.CURRENCIES*Config.BROKERS);
 }
 
 //******************************************
@@ -139,7 +234,10 @@ void memory_request_p_write(int id, struct currency *pProduto) {
 	// conteudo: investor, id, time_request
 	// colocar available = 1 nessa posicao do BCurrency
 	// e atualizar BCurrency.ptr->in
-	so_memory_request_p_write(id, pProduto);
+	// so_memory_request_p_write(id, pProduto);
+    BCurrency.buffer[BCurrency.ptr->in] = *pProduto;
+	BCurrency.buffer[BCurrency.ptr->in].available = 1;
+	BCurrency.ptr->in = (BCurrency.ptr->in+1) % Config.BUFFER_REQUEST;
 	//==============================================
 
 	prodcons_request_p_produce_end();
@@ -168,7 +266,13 @@ int memory_request_p_read(int id, struct currency *pProduto) {
 	// conteudo: investor, id, time_request
 	// colocar available = 0 nessa posicao do BCurrency
 	// e atualizar BCurrency.ptr->out
-	so_memory_request_p_read(id, pProduto);
+	// so_memory_request_p_read(id, pProduto);
+//    pProduto->investor = BCurrency.buffer[BCurrency.ptr->out].investor;
+//	pProduto->id = BCurrency.buffer[BCurrency.ptr->out].id;
+//	pProduto->time_request = BCurrency.buffer[BCurrency.ptr->out].time_request;
+    *pProduto = BCurrency.buffer[BCurrency.ptr->out];
+	BCurrency.buffer[BCurrency.ptr->out].available = 0;
+	BCurrency.ptr->out = (BCurrency.ptr->out+1) % Config.BUFFER_REQUEST;
 	//==============================================
 
 	// testar se existe stock do CURRENCY pedido pelo investor
@@ -206,8 +310,31 @@ void memory_request_e_write(int id, struct currency *pProduto) {
 	// a posicao BOrder.ptr->in do buffer BOrder
 	// conteudo: investor, id, available, broker, exchange, time_request
 	// colocar BOrder.ptr[n] = 1 na posicao respetiva
-	pos = so_memory_request_e_write(id, pProduto, exchange);
+	// pos = so_memory_request_e_write(id, pProduto, exchange);
+    
+    // find empty position
+	pos = -1;
+	int i;
+	for (i=0; i<Config.BUFFER_REQUEST; i++)
+	{
+		if (BOrder.ptr[i] == 0) 
+		{
+			pos = i;
+			break;
+		}
+	}
+	
+	if (pos == -1) 
+	{
+		perror("Shouldn't be here. Buffer for requests is full.");
+		exit(15);
+	}
+	
+	// fill position with data
+	BOrder.ptr[pos] = 1;
+    BOrder.buffer[pos] = *pProduto;
 	//==============================================
+    
 
 	prodcons_request_e_produce_end();
 
@@ -238,7 +365,13 @@ int memory_request_e_read(int id, struct currency *pProduto) {
 	// no buffer BOrder para pProduto
 	// conteudo: investor, id, available, broker, time_request, time_order
 	// colocar BOrder.ptr[n] = 0 na posicao respetiva
-	so_memory_request_e_read(id, pProduto);
+	// so_memory_request_e_read(id, pProduto);
+    int pos;
+	for (pos=0; pos<Config.BUFFER_REQUEST; pos++)
+		if (BOrder.ptr[pos] == 1) break;
+	
+    *pProduto = BOrder.buffer[pos];
+	BOrder.ptr[pos] = 0;
 	//==============================================
 
 	prodcons_request_e_consume_end();
@@ -265,7 +398,12 @@ void memory_receipt_r_write(int id, struct currency *pProduto) {
 	// a posicao BReceipt.ptr->in do buffer BReceipt
 	// conteudo: investor, id, available, broker, exchange, time_request, time_order
 	// colocar BReceipt.ptr[n] = 1 na posicao respetiva
-	pos = so_memory_receipt_r_write(id, pProduto);
+	// pos = so_memory_receipt_r_write(id, pProduto);
+    for (pos=0; pos<Config.BUFFER_RECEIPT; pos++)
+		if (BReceipt.ptr[pos] == 0) break;
+
+    BReceipt.buffer[pos] = *pProduto;
+	BReceipt.ptr[pos] = 1;
 	//==============================================
 
 	prodcons_receipt_r_produce_end();
@@ -296,7 +434,13 @@ void memory_receipt_r_read(int id, struct currency *pProduto) {
 	// no buffer BReceipt para pProduto
 	// conteudo: investor, available, broker, exchange, time_request, time_order, time_receipt
 	// colocar BReceipt.ptr[n] = 0 na posicao respetiva
-	so_memory_receipt_r_read(id, pProduto);
+	// so_memory_receipt_r_read(id, pProduto);
+    int pos;
+	for (pos=0; pos<Config.BUFFER_RECEIPT; pos++)
+		if (BReceipt.ptr[pos] == 1 && BReceipt.buffer[pos].id == pProduto->id) break;
+	
+    *pProduto = BReceipt.buffer[pos];
+	BReceipt.ptr[pos] = 0;
 	//==============================================
 
 	prodcons_receipt_r_consume_end();
@@ -314,13 +458,26 @@ void memory_create_statistics() {
 	//
 	// criação dinâmica de memória
 	// para cada campo da estrutura indicadores
-	so_memory_create_statistics();
+	// so_memory_create_statistics();
+    Ind.initial_stock = (int *) malloc(sizeof(int)*Config.CURRENCIES);
+    Ind.pid_investors = (int *) malloc(sizeof(int)*Config.INVESTORS);
+	Ind.pid_brokers = (int *) malloc(sizeof(int)*Config.BROKERS);
+	Ind.pid_exchanges = (int *) malloc(sizeof(int)*Config.EXCHANGES);
+	Ind.investors_servedby_brokers = (int *) malloc(sizeof(int)*Config.BROKERS);
+	Ind.investors_servedby_exchanges = (int *) malloc(sizeof(int)*Config.EXCHANGES);
+	Ind.currencies_getby_investors = (int *) malloc(sizeof(int)*Config.CURRENCIES);
+	Ind.currencies_deliveredby_exchanges = (int*) memory_create(STR_SHM_PRODEXCHANGES, Config.EXCHANGES * Config.CURRENCIES);
 	// iniciar indicadores relevantes:
 	// - Ind.initial_stock (c/ Config.stock respetivo)
 	// - Ind.investors_servedby_brokers (c/ 0)
 	// - Ind.investors_servedby_exchanges (c/ 0)
 	// - Ind.currencies_getby_investors (c/ 0)
-	so_memory_prepare_statistics();
+	// so_memory_prepare_statistics();
+    int i;
+	for (i=0; i<Config.CURRENCIES; i++)
+	{
+		Ind.initial_stock[i] = Config.stock[i];
+	}
 	//==============================================
 }
 
