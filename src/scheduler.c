@@ -7,7 +7,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <errno.h>
-#include <sys/mman.h> //mmap
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/time.h>

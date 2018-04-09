@@ -18,10 +18,10 @@
 #include "main.h"
 #include "so.h"
 #include "memory.h"
-#include "scheduler.h"
-#include "file.h"
 #include "prodcons.h"
+#include "file.h"
 #include "sotime.h"
+#include "scheduler.h"
 
 //==============================================
 // DECLARAR ACESSO A DADOS EXTERNOS

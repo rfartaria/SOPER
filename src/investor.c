@@ -16,9 +16,9 @@
 
 #include "main.h"
 #include "memory.h"
+#include "file.h"
 #include "sotime.h"
 #include "investor.h"
-#include "file.h"
 
 extern struct configuration Config;
 

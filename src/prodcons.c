@@ -16,8 +16,8 @@
 
 #include "main.h"
 #include "so.h"
-#include "control.h"
 #include "prodcons.h"
+#include "control.h"
 
 //==============================================
 // DECLARAR ACESSO A DADOS EXTERNOS

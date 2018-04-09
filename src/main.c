@@ -15,13 +15,13 @@
 #include <limits.h>
 
 #include "main.h"
-#include "investor.h"
+#include "so.h"
 #include "memory.h"
 #include "prodcons.h"
 #include "control.h"
 #include "file.h"
 #include "sotime.h"
-#include "so.h"
+#include "investor.h"
 #include "exchange.h"
 #include "broker.h"
 
@@ -29,6 +29,7 @@ struct statistics Ind;     // indicadores do funcionamento do SO_Currency
 struct configuration Config; // configuração da execução do SO_Currency
 
 /* main_investor recebe como parâmetro o nº de investors a criar */
+/* main_investor receives the number of investors to be created as a parameter */
 void main_investor(int quant)
 {
     //==============================================
@@ -39,20 +40,20 @@ void main_investor(int quant)
 	// - chama a função investor_executar passando como parâmetro o valor da variável de controlo do ciclo n=0,1,...
 	// - chama a função exit passando como parâmetro o valor devolvido pela função investor_executar
 	// o processo pai guarda o pid do filho no vetor Ind.pid_investors[n], com n=0,1,... e termina normalmente a função
-    //so_main_investor(quant);
-    int i, pid;
-    for (i=0;i<quant;i++)
-    {
-        if ((pid = fork()) == 0)
-        {
-            exit(investor_executar(i));
-        }
-        Ind.pid_investors[i] = pid;
-    }
+    //==============================================
+    // CREATE PROCESSES
+    //
+    // create a number of investor processes equal to "quant", each one will have an ID of 0,1,...
+    // after creating each process, the child process does two tasks:
+	// - calls the function investor_executar passing one parameter that is the ID (0,1,...)
+    // - calls the exit function passing  as parameter the value returned by the function investor_executar
+	// the parent process stores the PID of the child process in the array Ind.pid_investors[n], using the ID=0,1,... and returns from the function
+    so_main_investor(quant);
     //==============================================
 }
 
 /* main_broker recebe como parâmetro o nº de brokers a criar */
+/* main_broker receives the number of brokers to be created as a parameter */
 void main_broker(int quant)
 {
     //==============================================
@@ -63,20 +64,20 @@ void main_broker(int quant)
 	// - chama a função investor_executar passando como parâmetro o valor da variável de controlo do ciclo n=0,1,...
 	// - chama a função exit passando como parâmetro o valor devolvido pela função broker_executar
 	// o processo pai guarda o pid do filho no vetor Ind.pid_brokers[n], com n=0,1,... e termina normalmente a função
-    //so_main_broker(quant);
-    int i, pid;
-    for (i=0;i<quant;i++)
-    {
-        if ((pid = fork()) == 0)
-        {
-            exit(broker_executar(i));
-        }
-        Ind.pid_brokers[i] = pid;
-    }
+    //==============================================
+    // CREATE PROCESSES
+    //
+    // create a number of broker processes equal to "quant", each one will have an ID of 0,1,...
+    // after creating each process, the child process does two tasks:
+	// - calls the function broker_executar passing one parameter that is the ID (0,1,...)
+    // - calls the exit function passing  as parameter the value returned by the function broker_executar
+	// the parent process stores the PID of the child process in the array Ind.pid_brokers[n], using the ID=0,1,... and returns from the function
+    so_main_broker(quant);
     //==============================================
 }
 
 /* main_exchange recebe como parâmetro o nº de exchanges a criar */
+/* main_exchange receives the number of exchanges to be created as a parameter */
 void main_exchange(int quant)
 {
     //==============================================
@@ -87,16 +88,15 @@ void main_exchange(int quant)
 	// - chama a função investor_executar passando como parâmetro o valor da variável de controlo do ciclo n=0,1,...
 	// - chama a função exit passando como parâmetro o valor devolvido pela função exchange_executar
 	// o processo pai guarda o pid do filho no vetor Ind.pid_exchanges[n], com n=0,1,... e termina normalmente a função
-    //so_main_exchange(quant);
-    int i, pid;
-    for (i=0;i<quant;i++)
-    {
-        if ((pid = fork()) == 0)
-        {
-            exit(exchange_executar(i));
-        }
-        Ind.pid_exchanges[i] = pid;
-    }
+    //==============================================
+    // CREATE PROCESSES
+    //
+    // create a number of exchange processes equal to "quant", each one will have an ID of 0,1,...
+    // after creating each process, the child process does two tasks:
+	// - calls the function exchange_executar passing one parameter that is the ID (0,1,...)
+    // - calls the exit function passing  as parameter the value returned by the function exchange_executar
+	// the parent process stores the PID of the child process in the array Ind.pid_exchange[n], using the ID=0,1,... and returns from the function
+    so_main_exchange(quant);
     //==============================================
 }
 
@@ -119,29 +119,19 @@ int main(int argc, char *argv[])
 	// em caso de ausência de parâmetros escrever mensagem de como utilizar o programa e terminar
 	// considerar que os parâmetros apenas são introduzidos na ordem indicada pela mensagem
 	// considerar que são sempre introduzidos valores válidos para os parâmetros
-    //intervalo = so_main_args(argc, argv, &ficEntrada, &ficSaida, &ficLog);
-    if (argc < 2)
-    {
-        printf("Usage: socurrency file_configuracao [file_resultados] -l [file_log] -t [intervalo(us)]\n");
-        printf("Example: ./bin/socurrency testes/in/cenario1 testes/out/cenario1 -l testes/log/cenario1.log -t 1000\n");
-        exit(1);
-    }
-    
-    ficEntrada = argv[1];
-    
-    if (argc >= 3) {
-        ficSaida = argv[2];
-    }
-    
-    if (argc >= 5 && strcmp(argv[3], "-l") == 0) 
-    {
-        ficLog = argv[4];
-    }
-    
-    if (argc > 6 && strcmp(argv[5], "-t") == 0) 
-    {
-        sscanf(argv[6], "%ld", &intervalo);
-    }
+    //==============================================
+    // PROCESS INPUT PARAMETERS
+    // required parameter: file_configuration
+    // optional parameters:
+    //   file_results
+    //   -l file_log
+    //   -t interval(us)    // us: microseconds
+    //
+	// ignore unknow parameters
+	// if no parameters are introduced, write a message to the console informing about the correct usage
+	// consider that the parameters are always introduced in the same order
+	// consider that the values introduced as parameters are always valid
+    intervalo = so_main_args(argc, argv, &ficEntrada, &ficSaida, &ficLog);
     //==============================================
 
     printf(
@@ -179,24 +169,25 @@ int main(int argc, char *argv[])
     main_investor(Config.INVESTORS);
 
     //==============================================
-    // ESPERAR PELA TERMINAÇÃO DOS INVESTORS E ATUALIZAR INDICADORES
+    // ESPERAR PELA TERMINAÇÃO DOS INVESTORS E ATUALIZAR ESTATISTICAS
     //
     // esperar por cada investor individualmente
 	// se o investor terminou normalmente 
-	// então incrementar o indicador de currencies obtidos
-    // Ind.currencies_getby_investors[n], n=0,1,...
-    //so_main_wait_investors();
-    int i_inv, status_inv;
-    for (i_inv=0; i_inv<Config.INVESTORS; i_inv++)
-    {
-        waitpid(Ind.pid_investors[i_inv], &status_inv, 0);
-        if (WIFEXITED(status_inv))
-        {
-            if (WEXITSTATUS(status_inv)<Config.CURRENCIES)
-                Ind.currencies_getby_investors[WEXITSTATUS(status_inv)]++;
-            //printf("cur = %d  ind = %d\n", Config.CURRENCIES, WEXITSTATUS(status_inv));
-        }
-    }
+	// então testar se o valor do status é igual a CURRENCIES
+    //   se for igual entao nao atualizar as estatisticas 
+    //   se for inferior entao incrementar o indicador da respetiva currency obtida
+    // Ind.currencies_getby_investors[CURRENCY], n=0,1,...
+    //==============================================
+    // WAIT FOR THE INVESTOR PROCESSES TERMINATION AND UPDATE STATISTICS
+    //
+    // wait for each investor process
+	// if the investor has terminated normally
+    // then test if the value of status is equal to CURRENCIES
+    //   if it is equal then don't update statistics
+    //   if it is less than, increment the respective currency
+	// then increment the statistical data relative to the number of currencies obtained by investors
+    // Ind.currencies_getby_investors[CURRENCY], n=0,1,...
+    so_main_wait_investors();
     //==============================================
 
     // Desarmar alarme
@@ -213,16 +204,15 @@ int main(int argc, char *argv[])
 	// então atualizar o indicador de investors atendidos
     // Ind.investors_servedby_brokers[n], n=0,1,...
     // guardando nele o estado devolvido pela terminação do processo
-    //so_main_wait_brokers();
-    int i_bro, status_bro;
-    for (i_bro=0; i_bro<Config.BROKERS; i_bro++)
-    {
-        waitpid(Ind.pid_brokers[i_bro], &status_bro, 0);
-        if (WIFEXITED(status_bro))
-        {
-            Ind.investors_servedby_brokers[i_bro] = WEXITSTATUS(status_bro);
-        }
-    }
+    //==============================================
+    // WAIT FOR THE BROKERS PROCESSES TERMINATION AND UPDATE STATISTICS
+    //
+    // wait for each broker process
+	// if the broker has terminated normally
+	// then update the statistical data relative to the number of investors that have been served by brokers
+    // Ind.investors_servedby_brokers[n], n=0,1,...
+    // storing in it the status returned upon the child process termination
+    so_main_wait_brokers();
     //==============================================
 
     //==============================================
@@ -233,16 +223,15 @@ int main(int argc, char *argv[])
 	// então atualizar o indicador de investors atendidos
     // Ind.investors_servedby_exchanges[n], n=0,1,...
     // guardando nele o estado devolvido pela terminação do processo
-    //so_main_wait_exchanges();
-    int i_exc, status_exc;
-    for (i_exc=0; i_exc<Config.EXCHANGES; i_exc++)
-    {
-        waitpid(Ind.pid_exchanges[i_exc], &status_exc, 0);
-        if (WIFEXITED(status_exc))
-        {
-            Ind.investors_servedby_exchanges[i_exc] = WEXITSTATUS(status_exc);
-        }
-    }
+    //==============================================
+    // WAIT FOR THE EXCHANGE PROCESSES TERMINATION AND UPDATE STATISTICS
+    //
+    // wait for each exchange process
+	// if the exchange has terminated normally
+	// then update the statistical data relative to the number of investors that have been served by exchanges
+    // Ind.investors_servedby_exchanges[n], n=0,1,...
+    // storing in it the status returned upon the child process termination
+    so_main_wait_exchanges();
     //==============================================
 
     printf(

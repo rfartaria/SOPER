@@ -14,10 +14,10 @@
 #include <signal.h>
 #include <limits.h>
 
-#include "exchange.h"
 #include "main.h"
 #include "memory.h"
 #include "sotime.h"
+#include "exchange.h"
 
 extern struct statistics Ind;
 extern struct configuration Config;

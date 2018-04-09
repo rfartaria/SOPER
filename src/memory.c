@@ -19,9 +19,9 @@
 #include "memory.h"
 #include "prodcons.h"
 #include "control.h"
-#include "scheduler.h"
 #include "file.h"
 #include "sotime.h"
+#include "scheduler.h"
 
 //==============================================
 // DECLARAR ACESSO A DADOS EXTERNOS
