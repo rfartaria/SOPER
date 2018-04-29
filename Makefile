@@ -30,11 +30,13 @@ $(OBJ_DIR)/prodcons.o: $(SRC_DIR)/prodcons.c $(addprefix $(INC_DIR)/, main.h so.
 $(OBJ_DIR)/scheduler.o: $(SRC_DIR)/scheduler.c $(addprefix $(INC_DIR)/, main.h so.h scheduler.h)
 $(OBJ_DIR)/time.o: $(SRC_DIR)/time.c $(addprefix $(INC_DIR)/, main.h so.h sotime.h)
 
-clean:
+clean: clean_shm
 	rm -vf $(BIN_DIR)/*
 	rm -vf $(OBJECTS)
 	rm -vf $(TESTS_DIR)/out/*
 	rm -vf $(TESTS_DIR)/log/*
+
+clean_shm:
 	rm -vf /dev/shm/*_$$(id -u)
 
 all_scenarios: scenario1 scenario2 scenario3 scenario4
@@ -63,6 +65,7 @@ base_test: scenario1
 test_scenario%:
 	rm -vf $(TESTS_DIR)/out/$(subst test_,,$@).ref $(TESTS_DIR)/out/$(subst test_,,$@)
 	./socurrency.ref $(TESTS_DIR)/in/$(subst test_,,$@) $(TESTS_DIR)/out/$(subst test_,,$@).ref -l $(TESTS_DIR)/log/$(subst test_,,$@).log.ref -t 1000
+	make clean_shm
 	$(BIN_DIR)/socurrency $(TESTS_DIR)/in/$(subst test_,,$@) $(TESTS_DIR)/out/$(subst test_,,$@) -l $(TESTS_DIR)/log/$(subst test_,,$@).log -t 1000
 	bash script.sh $(TESTS_DIR)/out/$(subst test_,,$@) $(TESTS_DIR)/out/$(subst test_,,$@).ref
 
