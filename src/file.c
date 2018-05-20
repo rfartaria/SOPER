@@ -27,6 +27,9 @@
 // DECLARAR ACESSO A DADOS EXTERNOS
 //
 extern struct configuration Config;
+extern struct request_p BCurrency;
+extern struct request_e BOrder;
+extern struct receipt_r BReceipt;
 //==============================================
 
 struct file Ficheiros; // informação sobre nomes e handles de ficheiros
@@ -67,19 +70,17 @@ void file_begin(char *fic_in, char *fic_out, char *fic_log) {
 	// COUNT CURRENCIES
     // use strtok to iterate Config.list_currencies
     // save the result in Config.CURRENCIES
-	// so_file_count_currencies();
-    //printf("%s", Config.list_currencies); //exit(0);
+    // so_file_count_currencies();
     char tmpstr[1000] = {0};
-	strcpy(tmpstr,Config.list_currencies);
+    strcpy(tmpstr, Config.list_currencies);
     char *cch;
-    cch = strtok(tmpstr," ");
+    cch = strtok(tmpstr, " ");
 	Config.CURRENCIES=0;
     while (cch != NULL)
     {
-		Config.CURRENCIES++;
-		cch = strtok (NULL, " ");
+        Config.CURRENCIES++;
+        cch = strtok(NULL, " ");
     }
-    //printf("\n%d\n", Config.CURRENCIES); exit(0);
 	//==============================================
 
     // initialize memory for vector containing the stock for CURRENCY and semaphore
@@ -91,37 +92,33 @@ void file_begin(char *fic_in, char *fic_out, char *fic_log) {
     // iterate Config.list_currencies and
     // save each value in the array Config.stock
     // so_file_read_stock();
-    //printf("\nstr = %s\n", Config.list_currencies);
     strcpy(tmpstr,Config.list_currencies);
-	cch = strtok(tmpstr," ");
-	int *istock = Config.stock;
-    int count = 0;
-    while (cch != NULL)
+    cch = strtok(tmpstr, " ");
+    int count;
+    for (count=0; count<Config.CURRENCIES; count++)
     {
-		sscanf(cch, "%d", istock);
-		cch = strtok (NULL, " ");
-		istock++;
-        //printf("\n%d\n", Config.stock[count]);
-        count++;
+        if (cch==NULL) break;
+        sscanf(cch, "%d", &Config.stock[count]);
+        cch = strtok (NULL, " ");
     }
-    //exit(0);
 	//==============================================
 
 	//==============================================
 	// COUNT INVESTORS
     // use strtok to iterate Config.list_investors
 	// keep the result in  Config.INVESTORS
-	so_file_count_investors();
-//    printf("\n%s\n", Config.list_investors); //exit(0);
-//    strcpy(tmpstr,Config.list_investors);
-//    cch = strtok(tmpstr," ");
-//	Config.INVESTORS = 0;
-//    while (cch != NULL)
-//    {
-//		Config.INVESTORS++;
-//        cch = strtok (NULL, " ");
-//    }
-//    printf("\n%d\n", Config.INVESTORS); //exit(0);
+    // so_file_count_investors();
+    
+    // is this a bug? Shouldn't we make a copy of Config.list_investors?
+    // strtok is a function with side effects as it modifies the arguments
+    // is there a future code dependency on the string changed by strtok? If yes, is that safe?
+    cch = strtok(Config.list_investors," ");
+	Config.INVESTORS = 0;
+    while (cch != NULL)
+    {
+		Config.INVESTORS++;
+        cch = strtok (NULL, " ");
+    }
 	//==============================================
 
 	//==============================================
@@ -129,7 +126,6 @@ void file_begin(char *fic_in, char *fic_out, char *fic_log) {
     // use strtok to iterate Config.list_brokers
 	// keep the result in Config.BROKERS
 	//so_file_count_brokers();
-    //printf("\n%s\n", Config.list_brokers); exit(0);
     strcpy(tmpstr,Config.list_brokers);
     cch = strtok(tmpstr," ");
 	Config.BROKERS = 0;
@@ -144,8 +140,7 @@ void file_begin(char *fic_in, char *fic_out, char *fic_log) {
 	// COUNT EXCHANGES
 	// usar strtok para percorrer Config.list_exchanges
 	// guardar resultado em Config.EXCHANGES
-	so_file_count_exchanges();
-    //printf("\n%s\n", Config.list_exchanges); exit(0);
+	//so_file_count_exchanges();
     strcpy(tmpstr,Config.list_exchanges);
     cch = strtok(tmpstr,",");
 	Config.EXCHANGES = 0;
@@ -226,7 +221,57 @@ void file_write_log_file(int etapa, int id) {
         // WRITE DATA IN LOG FILE
 		//
         // the log must scrupulously follow the defined format
-		so_file_write_log_file(etapa, id, t_diff);
+		//so_file_write_log_file(etapa, id, t_diff);
+        int i, tmp_in;
+        char record_sep[16];
+        char buffer_sep[16];
+        
+        for (i=0;i<16;i++) record_sep[i] = 0xFF;
+        for (i=0;i<8;i++) buffer_sep[i] = 0xFF;
+        for (i=8;i<16;i++) buffer_sep[i] = 0x00;
+
+        fwrite(record_sep, sizeof(char), 16, Ficheiros.h_log);
+        fwrite(&t_diff, sizeof(double), 1, Ficheiros.h_log);
+        fwrite(&etapa, sizeof(int), 1, Ficheiros.h_log);
+        fwrite(&id, sizeof(int), 1, Ficheiros.h_log);
+        
+        // BCurrency
+        fwrite(buffer_sep, sizeof(char), 16, Ficheiros.h_log);
+        tmp_in = BCurrency.ptr->in;
+        if (BCurrency.ptr->in < BCurrency.ptr->out) tmp_in = BCurrency.ptr->in + Config.BUFFER_REQUEST;
+        for (i=BCurrency.ptr->out; i<tmp_in; i++)
+        {
+            fwrite(&BCurrency.buffer[i%Config.BUFFER_REQUEST].id, sizeof(int), 1, Ficheiros.h_log);
+            fwrite(&BCurrency.buffer[i%Config.BUFFER_REQUEST].investor, sizeof(int), 1, Ficheiros.h_log);
+            fwrite(&BCurrency.buffer[i%Config.BUFFER_REQUEST].broker, sizeof(int), 1, Ficheiros.h_log);
+            fwrite(&BCurrency.buffer[i%Config.BUFFER_REQUEST].exchange, sizeof(int), 1, Ficheiros.h_log);
+        }
+        
+        // BOrder
+        fwrite(buffer_sep, sizeof(char), 16, Ficheiros.h_log);
+        for (i=0; i<Config.BUFFER_ORDER; i++)
+        {
+            if (BOrder.ptr[i] != 0)
+            {
+                fwrite(&BOrder.buffer[i].id, sizeof(int), 1, Ficheiros.h_log);
+                fwrite(&BOrder.buffer[i].investor, sizeof(int), 1, Ficheiros.h_log);
+                fwrite(&BOrder.buffer[i].broker, sizeof(int), 1, Ficheiros.h_log);
+                fwrite(&BOrder.buffer[i].exchange, sizeof(int), 1, Ficheiros.h_log);
+            }
+        }
+        
+        // BReceipt
+        fwrite(buffer_sep, sizeof(char), 16, Ficheiros.h_log);
+        for (i=0; i<Config.BUFFER_RECEIPT; i++)
+        {
+            if (BReceipt.ptr[i] != 0)
+            {
+                fwrite(&BReceipt.buffer[i].id, sizeof(int), 1, Ficheiros.h_log);
+                fwrite(&BReceipt.buffer[i].investor, sizeof(int), 1, Ficheiros.h_log);
+                fwrite(&BReceipt.buffer[i].broker, sizeof(int), 1, Ficheiros.h_log);
+                fwrite(&BReceipt.buffer[i].exchange, sizeof(int), 1, Ficheiros.h_log);
+            }
+        }
 		//==============================================
 
 		prodcons_buffers_end();
