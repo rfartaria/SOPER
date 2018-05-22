@@ -24,7 +24,7 @@ struct prodcons {
 	sem_t *stock_mutex;
 };
 
-sem_t * semaphore_create(char*, int);
+//sem_t * semaphore_create(char*, int);
 void prodcons_create_stock();
 void prodcons_create_buffers();
 void prodcons_destroy();

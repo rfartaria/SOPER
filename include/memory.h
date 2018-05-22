@@ -38,7 +38,7 @@ struct receipt_r {
 						  // se a posição respetiva está livre ou ocupada
 };
 
-void * memory_create(char*, int);
+//void * memory_create(char*, int);
 void memory_create_stock();
 void memory_create_buffers();
 void memory_create_scheduler();
@@ -50,6 +50,6 @@ int  memory_request_e_read(int, struct currency *);
 void memory_receipt_r_write(int, struct currency *);
 void memory_receipt_r_read(int, struct currency *);
 void memory_create_statistics();
-void memory_destroy(char * name, void * ptr, int size);
+//void memory_destroy(char * name, void * ptr, int size);
 
 #endif

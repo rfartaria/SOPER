@@ -4,7 +4,10 @@ OBJ_DIR=obj
 SRC_DIR=src
 INC_DIR=include
 BIN_DIR=bin
+LIB_DIR=lib
 TESTS_DIR=tests
+
+export LD_LIBRARY_PATH=lib
 
 CC=gcc
 CFLAGS = -O0 -g -fPIC -Wall -I$(INC_DIR)
@@ -16,8 +19,11 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 all: $(BIN_DIR)/socurrency
 
-$(BIN_DIR)/socurrency: $(OBJECTS)
-	$(CC) $(CFLAGS) $(OBJECTS) $(OBJ_DIR)/so.o -lrt -lpthread -o $(BIN_DIR)/socurrency
+$(BIN_DIR)/socurrency: $(OBJECTS) $(LIB_DIR)/libso.so
+	$(CC) $(CFLAGS) $(OBJECTS) $(OBJ_DIR)/so.o -L$(LIB_DIR) -lrt -lpthread -lso -o $(BIN_DIR)/socurrency
+
+$(LIB_DIR)/libso.so: $(OBJ_DIR)/libso.o
+	$(CC) $(CFLAGS) -shared -o $(LIB_DIR)/libso.so $(OBJ_DIR)/libso.o
 
 $(OBJ_DIR)/broker.o: $(SRC_DIR)/broker.c $(addprefix $(INC_DIR)/, main.h memory.h broker.h)
 $(OBJ_DIR)/control.o: $(SRC_DIR)/control.c $(addprefix $(INC_DIR)/, main.h so.h memory.h prodcons.h control.h)
@@ -29,6 +35,8 @@ $(OBJ_DIR)/memory.o: $(SRC_DIR)/memory.c $(addprefix $(INC_DIR)/, main.h so.h me
 $(OBJ_DIR)/prodcons.o: $(SRC_DIR)/prodcons.c $(addprefix $(INC_DIR)/, main.h so.h control.h prodcons.h)
 $(OBJ_DIR)/scheduler.o: $(SRC_DIR)/scheduler.c $(addprefix $(INC_DIR)/, main.h so.h scheduler.h)
 $(OBJ_DIR)/time.o: $(SRC_DIR)/time.c $(addprefix $(INC_DIR)/, main.h so.h sotime.h)
+
+$(OBJ_DIR)/libso.o: $(SRC_DIR)/libso.c $(addprefix $(INC_DIR)/, libso.h)
 
 clean: clean_shm
 	rm -vf $(BIN_DIR)/*

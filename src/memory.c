@@ -36,7 +36,7 @@ struct request_p BCurrency; 	// buffer investor-broker
 //******************************************
 // CRIAR ZONAS DE MEMORIA
 //
-void * memory_create(char * name, int size) {
+//void * memory_create(char * name, int size) {
 	//==============================================
 	// FUNÇÃO GENÉRICA DE CRIAÇÃO DE MEMÓRIA PARTILHADA
 	//
@@ -44,9 +44,9 @@ void * memory_create(char * name, int size) {
 	// sprintf(name_uid,"/%s_%d", name, getuid())
 	// usar name_uid em shm_open
 	// usar tambem: ftruncate e mmap
-	return so_memory_create(name, size);
+//	return so_memory_create(name, size);
 	//==============================================
-}
+//}
 void memory_create_stock() {
 	//==============================================
 	// CRIAR ZONA DE MEMÓRIA PARA O STOCK DE CADO CURRENCY
@@ -98,7 +98,7 @@ void memory_create_scheduler() {
 	//==============================================
 }
 
-void memory_destroy(char * name, void * ptr, int size) {
+//void memory_destroy(char * name, void * ptr, int size) {
 	//==============================================
 	// FUNÇÃO GENÉRICA DE DESTRUIÇÃO DE MEMÓRIA PARTILHADA
 	//
@@ -106,9 +106,9 @@ void memory_destroy(char * name, void * ptr, int size) {
 	// sprintf(name_uid,"/%s_%d", name, getuid())
 	// usar name_uid em shm_unlink
 	// usar tambem: munmap
-	so_memory_destroy(name, ptr, size);
+//	so_memory_destroy(name, ptr, size);
 	//==============================================
-}
+//}
 
 //******************************************
 // MEMORIA_DESTRUIR

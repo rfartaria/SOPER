@@ -30,13 +30,13 @@ struct prodcons ProdCons;
 //******************************************
 // SEMAFORO_CRIAR
 //
-sem_t * semaphore_create(char * name, int value) {
+//sem_t * semaphore_create(char * name, int value) {
 	//==============================================
 	// FUNÇÃO GENÉRICA DE CRIAÇÃO DE UM SEMÁFORO
 	//
-	return so_semaphore_create(name, value);
+	//return so_semaphore_create(name, value);
 	//==============================================
-}
+//}
 
 void prodcons_create_stock() {
 	//==============================================
@@ -56,13 +56,13 @@ void prodcons_create_buffers() {
 	//==============================================
 }
 
-void semaphore_destroy(char * name, void * ptr) {
+//void semaphore_destroy(char * name, void * ptr) {
 	//==============================================
 	// FUNÇÃO GENÉRICA DE DESTRUIÇÃO DE UM SEMÁFORO
 	//
-	so_semaphore_destroy(name, ptr);
+//	so_semaphore_destroy(name, ptr);
 	//==============================================
-}
+//}
 
 void prodcons_destroy() {
 	//==============================================
