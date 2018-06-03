@@ -1,5 +1,4 @@
 #include <semaphore.h>
-
 #include "libso.h"
 
 int main() 
